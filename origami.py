@@ -118,12 +118,16 @@ class PaneCommand(sublime_plugin.WindowCommand):
 
 	def travel_to_pane(self, direction, create_new_if_necessary=False):
 		adjacent_cell = self.adjacent_cell(direction)
+		created = False
 		if adjacent_cell:
 			cells = self.get_cells()
 			new_group_index = cells.index(adjacent_cell)
 			self.window.focus_group(new_group_index)
 		elif create_new_if_necessary:
 			self.create_pane(direction, True)
+			created = True
+
+		return created
 
 	def carry_file_to_pane(self, direction, create_new_if_necessary=False):
 		view = self.window.active_view()
@@ -131,12 +135,16 @@ class PaneCommand(sublime_plugin.WindowCommand):
 			# If we're in an empty group, there's no active view
 			return
 		window = self.window
-		self.travel_to_pane(direction, create_new_if_necessary)
+		group = window.active_group()
+		created = self.travel_to_pane(direction, create_new_if_necessary)
 
 		active_group = window.active_group()
 		views_in_group = window.views_in_group(active_group)
 		window.set_view_index(view, active_group, len(views_in_group))
 		sublime.set_timeout(lambda: window.focus_view(view))
+
+		if not created:
+			self.destroy_empty_pane(group, direction)
 
 
 	def clone_file_to_pane(self, direction, create_new_if_necessary=False):
@@ -446,6 +454,19 @@ class PaneCommand(sublime_plugin.WindowCommand):
 		if target_dir:
 			self.travel_to_pane(target_dir)
 			self.destroy_pane(opposite_direction(target_dir))
+
+	def destroy_empty_pane(self, group, direction):
+		window = self.window
+		if window == None:
+			print("widows none")
+			# If we're the last view in the window, then the window closes before on_pre_close is called (!!).
+			# In this case, we don't want to close anything extra because the window is already closing.
+			return
+
+		# We're in pre_close, so use set_timeout to close the group right after this.
+		if len(window.views_in_group(group)) == 0:
+			direction = opposite_direction(direction)
+			sublime.set_timeout(lambda: window.run_command("destroy_pane", {"direction": direction}), 0)
 
 	def destroy_pane(self, direction):
 		if direction == "self":
