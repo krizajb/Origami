@@ -456,9 +456,12 @@ class PaneCommand(sublime_plugin.WindowCommand):
 			self.destroy_pane(opposite_direction(target_dir))
 
 	def destroy_empty_pane(self, group, direction):
+		auto_close = self.settings().get("auto_close_empty_panes", False)
+		if not auto_close:
+			return
+
 		window = self.window
 		if window == None:
-			print("widows none")
 			# If we're the last view in the window, then the window closes before on_pre_close is called (!!).
 			# In this case, we don't want to close anything extra because the window is already closing.
 			return
