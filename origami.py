@@ -456,7 +456,9 @@ class PaneCommand(sublime_plugin.WindowCommand):
 			self.destroy_pane(opposite_direction(target_dir))
 
 	def destroy_empty_pane(self, group, direction):
-		auto_close = self.settings().get("auto_close_empty_panes", False)
+		view = self.window.active_view()
+		auto_close = view.settings().get("origami_auto_close_empty_panes", False)
+		auto_close = self.settings().get("auto_close_empty_panes", auto_close)
 		if not auto_close:
 			return
 
